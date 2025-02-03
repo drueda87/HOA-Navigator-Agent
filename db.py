@@ -15,7 +15,7 @@ def get_zipcodes():
         cur = conn.cursor()
         cur.execute("Select zip_code FROM zip_codes;")
         # line comprehension that reurns tuples and only grabs first column of zips
-        zipodes = [row[0] for row in cur.fetchall()]
+        zipcodes = [row[0] for row in cur.fetchall()]
         cur.close()
         conn.close()
         return zipcodes
