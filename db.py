@@ -11,7 +11,7 @@ def get_zipcodes():
     # try is a keyword used for error handling to prevent crashing, in the event of an error.
     try:
         conn = get_connection()
-        # creatores a cursuor in the connection to run a query
+        # creates a cursuor in the connection to run a query
         cur = conn.cursor()
         cur.execute("Select zip_code FROM zip_codes;")
         # line comprehension that reurns tuples and only grabs first column of zips
@@ -32,7 +32,7 @@ def insert_property(data):
         for property in data:
             identifier = property.get("identifier",{})
             address = property.get("address",{})
-            location = property.ge("location",{})
+            location = property.get("location",{})
             vintage = property.get("vintage",{})
             
             # execute(SQL Query, values)
