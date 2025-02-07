@@ -9,6 +9,6 @@ DB_CONFIG = {
 
 }
 
-API_URL = "https://api.developer.attomdata.com/property/address"
+API_URL = "https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/address"
 API_KEY = "0ef420ddfd0fa5dd389d27d944b6aa48"
 

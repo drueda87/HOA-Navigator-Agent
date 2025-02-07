@@ -35,6 +35,8 @@ def insert_property(data):
             location = property.get("location",{})
             vintage = property.get("vintage",{})
             
+            print(f"Inserting Property: {address.get('line1')}, {address.get('postal1')}")  # ✅ Debugging
+
             # execute(SQL Query, values)
             # value substiution used to prevent direct SQL injection.
             cur.execute("""
