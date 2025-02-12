@@ -25,49 +25,90 @@ def get_zipcodes():
         return []
     
 def insert_property(data):
-    """insert property data into database"""
+    """Insert property data into database, replacing empty values with 'null'"""
     try:
         conn = get_connection()
         cur = conn.cursor()
         for property in data:
-            identifier = property.get("identifier",{})
-            address = property.get("address",{})
-            location = property.get("location",{})
-            vintage = property.get("vintage",{})
-            
-            # execute(SQL Query, values)
-            # value substiution used to prevent direct SQL injection.
-            cur.execute("""
-                INSERT INTO properties (
-                    attom_id, fips, apn, 
-                    address_line1, address_line2, city, state, zip_code, postal2, postal3, country,
-                    latitude, longitude, accuracy, distance,
-                    match_code, last_modified, pub_date
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (attom_id) DO NOTHING;
-            """, (
-                identifier.get("attomId"),
-                identifier.get("fips"),
-                identifier.get("apn"),
-                address.get("line1"),
-                address.get("line2"),
-                address.get("locality"),
-                address.get("countrySubd"),
-                address.get("postal1"),
-                address.get("postal2"),
-                address.get("postal3"),
-                address.get("country"),
-                location.get("latitude"),
-                location.get("longitude"),
-                location.get("accuracy"),
-                location.get("distance"),
-                address.get("matchCode"),
-                vintage.get("lastModified"),
-                vintage.get("pubDate")
-            ))   
-        # commit() saves changes applied to db.
+            identifier = property.get("identifier", {})
+            address = property.get("address", {})
+            location = property.get("location", {})
+            vintage = property.get("vintage", {})
+
+            # Replace empty or missing values with "null"
+            attom_id = identifier.get("attomId", "null")
+            fips = identifier.get("fips", "null")
+            apn = identifier.get("apn", "null")
+            address_line1 = address.get("line1", "null")
+            address_line2 = address.get("line2", "null")
+            city = address.get("locality", "null")
+            state = address.get("countrySubd", "null")
+            zip_code = address.get("postal1", "null")
+            postal2 = address.get("postal2", "null")
+            postal3 = address.get("postal3", "null")
+            country = address.get("country", "null")
+            latitude = location.get("latitude", "null")
+            longitude = location.get("longitude", "null")
+            accuracy = location.get("accuracy", "null")
+            distance = location.get("distance", "null")
+            match_code = address.get("matchCode", "null")
+            last_modified = vintage.get("lastModified", "null")
+            pub_date = vintage.get("pubDate", "null")
+
+            try:
+                cur.execute("""
+                    INSERT INTO properties (
+                        attom_id, fips, apn,
+                        address_line1, address_line2, city, state, zip_code, postal2, postal3, country,
+                        latitude, longitude, accuracy, distance,
+                        match_code, last_modified, pub_date
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (attom_id) DO NOTHING;
+                """, (
+                    attom_id,
+                    fips,
+                    apn,
+                    address_line1,
+                    address_line2,
+                    city,
+                    state,
+                    zip_code,
+                    postal2,
+                    postal3,
+                    country,
+                    latitude,
+                    longitude,
+                    accuracy,
+                    distance,
+                    match_code,
+                    last_modified,
+                    pub_date
+                ))
+            except Exception as row_error:
+                print(f"Failed to insert property: {property}, Error: {row_error}")
+
         conn.commit()
         cur.close()
         conn.close()
     except Exception as e:
         print(f"Database Insert Error: {e}")
+
+
+def update_property_count(zip_code, property_count):
+    """Update the property count in the database for a given ZIP code and state."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+             """
+             UPDATE zip_codes
+             SET property_count = %s
+             WHERE zip_code = %s;
+             """,
+            (property_count, zip_code)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Database Update Error for property_counts: {e}")
