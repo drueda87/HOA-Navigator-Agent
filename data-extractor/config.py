@@ -1,9 +1,10 @@
+import os
 # config.py - store database and API credentials
 
 DB_CONFIG = {
     "dbname": "real_estate",
     "user": "postgres",
-    "password": "salvatioN123!",
+    "password": os.getenv("DB_PASSWORD"),
     "host": "localhost",
     "port": "5432"
 
