@@ -10,7 +10,7 @@ def get_property_data():
     try:
         with conn.cursor(cursor_factor=RealDictCursor) as cursor:
             query = """
-            SELECT id, address_line1, city, state, zip_code, latitude, longitutde, sub_division_id, subdivision, block_num, lot_num
+            SELECT id, address_line1, city, state, zip_code, latitude, longitude, sub_division_id, subdivision, block_num, lot_num
             FROM properties
             WHERE sub_division_id in ('5424','3633','6063','0365','0060','3153','1905','0457','7060')"""
             cursor.execute(query)

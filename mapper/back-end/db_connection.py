@@ -1,6 +1,6 @@
 import psycopg2
 import os
-from psycopg2.extras import RealDicCursor
+from psycopg2.extras import RealDictCursor
 
 
 DB_CONFIG = {
