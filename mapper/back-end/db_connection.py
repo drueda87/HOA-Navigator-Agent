@@ -10,10 +10,12 @@ DB_CONFIG = {
     "host": "localhost",
     "port": "5432"
     }
+
 def get_db_connection():
     """Establish and return a database connection."""
     try:
-        conn = psycopg2.connection(**DB_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
+        print("Database Connection Successful")
         return conn
     except Exception as e:
         print(f"error connecting to the database: {e}")
