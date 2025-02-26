@@ -1,35 +1,62 @@
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { TextField, Button, Select, MenuItem, Card, CardContent, CardHeader, Typography } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import { FormControl, InputLabel } from "@mui/material";
 
-mapboxgl.accessToken = "pk.eyJ1IjoiZHJ1ZWRhODciLCJhIjoiY203ZjVnZ3FnMG1pajJxb2g5YmZnY3BjNCJ9.fpQgwsSJLvoE2es3SeYLqQ"; // 🔥 Replace with your token
+
+mapboxgl.accessToken = "pk.eyJ1IjoiZHJ1ZWRhODciLCJhIjoiY203ZjVnZ3FnMG1pajJxb2g5YmZnY3BjNCJ9.fpQgwsSJLvoE2es3SeYLqQ"; // Replace with your actual token
 
 const MapComponent = () => {
-  // 🔥 Hooks must be declared inside the function component
   const mapContainerRef = useRef(null);
   const [map, setMap] = useState(null);
   const [properties, setProperties] = useState([]);
-  const [selectedMarker, setSelectedMarker] = useState(null); // ✅ Placed correctly inside function
-  const [selectedProperty, setSelectedProperty] = useState(null); // ✅ For side panel
-  const markerElement = document.createElement("div");
-  markerElement.className = "custom-marker"; // This should match your CSS class
-  const selectedMarkerRef = useRef(null); // 🔥 Use a ref to track the selected marker
-  const [selectedHOA, setSelectedHOA] = useState(null); 
-  console.log(selectedHOA);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedHOA, setSelectedHOA] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const selectedMarkerRef = useRef(null); // 🔹 FIX: Added useRef to track selected marker
+  const [filteredProperties, setFilteredProperties] = useState([]);
 
+  // Handle search input change
+  const handleSearchChange = (event, value) => {
+    setSearchQuery(value);
+
+    // Filter properties based on input
+    if (value.length > 1) {
+      const results = properties.filter((prop) =>
+        prop.address_line1.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredProperties(results);
+    } else {
+      setFilteredProperties([]);
+    }
+  };
+
+  // Zoom to selected property
+  const handleSelectProperty = (event, value) => {
+    if (!value) return;
+    const selected = properties.find((prop) => prop.address_line1 === value);
+    if (selected) {
+      map.flyTo({
+        center: [parseFloat(selected.longitude), parseFloat(selected.latitude)],
+        zoom: 16
+      });
+    }
+  };
 
   // Fetch property data
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/properties") // 🔥 Ensure API is running
+    fetch("http://127.0.0.1:5000/properties")
       .then((response) => response.json())
       .then((data) => {
-        console.log("Fetched Properties:", data);
         setProperties(data);
       })
       .catch((error) => console.error("Error fetching properties:", error));
   }, []);
 
-  // Initialize Mapbox map
+  // Initialize Mapbox
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -41,67 +68,34 @@ const MapComponent = () => {
     });
 
     setMap(newMap);
-    
-    console.log("Map instance:", newMap); // 🔥 Debugging map instance
-
-
     return () => newMap.remove();
   }, []);
 
-  // Add markers when properties are available
-  useEffect(() => {
-      if (!map || properties.length === 0) return;
-  
-      properties.forEach((property) => {
-        const lat = parseFloat(property.latitude);
-        const lng = parseFloat(property.longitude);
-  
-        if (!isNaN(lat) && !isNaN(lng)) {
-          const markerElement = document.createElement("div");
-          markerElement.className = "custom-marker"; // Style in CSS
-  
-          const marker = new mapboxgl.Marker({ element: markerElement })
-            .setLngLat([lng, lat])
-            .setPopup(new mapboxgl.Popup().setHTML(`<h3>${property.address_line1}</h3>`))
-            .addTo(map);
-  
-          // 🔥 Click event to change marker color & open side panel
-          markerElement.addEventListener("click", () => {
-            if (selectedMarkerRef.current && selectedMarkerRef.current !== markerElement) {
-              selectedMarkerRef.current.style.backgroundColor = "blue"; // Reset previous marker to default
-            }
-            markerElement.style.backgroundColor = "red"; // Highlight selected marker
-            selectedMarkerRef.current = markerElement; // Update ref without re-rendering
-            setSelectedProperty(property); // Show property details
-          });
-        } else {
-          console.error("Invalid coordinates for property:", property);
-        }
-      });
-    }, [map, properties]);
+// Add markers and HOA boundary
+useEffect(() => {
+  if (!map || properties.length === 0) return;
 
-    
-    // 🔥 Add HOA boundary when properties are available
-    useEffect(() => {
-      console.log("Running HOA Boundary useEffect");
-      if (!map || properties.length === 0 || !selectedHOA) return;
-    
-      const hoaProperties = properties.filter(prop => prop.subdivision === selectedHOA);
-    
-      if (hoaProperties.length === 0) return;
-    
+  // Remove previous HOA boundary (optional, ensures it updates correctly)
+  if (map.getLayer("hoa-outline")) {
+    map.removeLayer("hoa-outline");
+  }
+  if (map.getSource("hoa-boundary")) {
+    map.removeSource("hoa-boundary");
+  }
+
+  // 🔹 Filter properties for the selected HOA
+  if (selectedHOA) {
+    const hoaProperties = properties.filter(prop => prop.subdivision === selectedHOA);
+
+    if (hoaProperties.length > 0) {
       const latitudes = hoaProperties.map(p => parseFloat(p.latitude));
       const longitudes = hoaProperties.map(p => parseFloat(p.longitude));
-    
+
       const minLat = Math.min(...latitudes);
       const maxLat = Math.max(...latitudes);
       const minLng = Math.min(...longitudes);
       const maxLng = Math.max(...longitudes);
-    
-      console.log("Latitudes:", latitudes);
-      console.log("Longitudes:", longitudes);
-      console.log("Min/Max Values:", minLat, maxLat, minLng, maxLng);
-    
+
       const hoaBoundary = {
         type: "Feature",
         geometry: {
@@ -111,74 +105,158 @@ const MapComponent = () => {
           ]]
         }
       };
-    
-      console.log("HOA Boundary Data:", hoaBoundary);
-    
-      // 🛑 REMOVE EXISTING SOURCE & LAYERS BEFORE ADDING NEW ONES
-      if (map.getSource("hoa-boundary")) {
-        console.log("Removing existing HOA boundary...");
-        map.removeLayer("hoa-outline");
-        map.removeLayer("hoa-fill");
-        map.removeSource("hoa-boundary");
-      }
-    
-      // ✅ ADD UPDATED SOURCE & LAYERS
+
+      // Add HOA boundary source and layer with blue background fill
       map.addSource("hoa-boundary", { type: "geojson", data: hoaBoundary });
-    
-      map.addLayer({
-        id: "hoa-fill",
-        type: "fill",
-        source: "hoa-boundary",
-        layout: {},
-        paint: {
-          "fill-color": "#0080ff",
-          "fill-opacity": 0.2
-        }
-      });
-    
-      map.addLayer({
-        id: "hoa-outline",
-        type: "line",
-        source: "hoa-boundary",
-        layout: {},
-        paint: {
-          "line-color": "#0000ff",
-          "line-width": 2
-        }
-      });
-    
-      console.log("Source Exists:", map.getSource("hoa-boundary"));
-      console.log("Layer Exists:", map.getLayer("hoa-outline"));
-    
-    }, [map, properties, selectedHOA]); // 👈 Runs when `map`, `properties`, or `selectedHOA` changes
-    
+        map.addLayer({
+          id: "hoa-fill",
+          type: "fill",
+          source: "hoa-boundary",
+          layout: {},
+          paint: {
+            "fill-color": "#0000ff", // Blue background
+            "fill-opacity": 0.2 // Adjust opacity for visibility
+          }
+        });
 
+        map.addLayer({
+          id: "hoa-outline",
+          type: "line",
+          source: "hoa-boundary",
+          layout: {},
+          paint: {
+            "line-color": "#0000ff",
+            "line-width": 2
+          }
+        });
 
+    }
+  }
+
+  // 🔹 Add custom markers for each property
+  properties.forEach((property) => {
+    const lat = parseFloat(property.latitude);
+    const lng = parseFloat(property.longitude);
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      // Create a custom marker element
+      const markerElement = document.createElement("div");
+      markerElement.className = "custom-marker"; // 🔹 Uses your index.css class
+
+      // Create a Mapbox marker with the custom element (NO POPUP)
+      const marker = new mapboxgl.Marker({ element: markerElement })
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      // 🔥 Click event to change marker color & open details
+      markerElement.addEventListener("click", () => {
+        if (selectedMarkerRef.current && selectedMarkerRef.current !== markerElement) {
+          selectedMarkerRef.current.style.backgroundColor = "blue"; // Reset previous marker
+        }
+        markerElement.style.backgroundColor = "red"; // Highlight selected marker
+        selectedMarkerRef.current = markerElement; // Update ref without re-rendering
+        setSelectedProperty(property); // Show property details
+      });
+    }
+  });
+
+}, [map, properties, selectedHOA]); // Runs when map, properties, or HOA changes
+
+const [chatInput, setChatInput] = useState("");
 return (
-  <div>
-    {/* HOA Dropdown - Allows selection of an HOA */}
-    <select onChange={(e) => setSelectedHOA(e.target.value)}>
-      <option value="">Select HOA</option>
-      {[...new Set(properties.map(p => p.subdivision))].map((hoa, index) => (
-        <option key={index} value={hoa}>{hoa || "Unknown HOA"}</option>
-      ))}
-    </select>
+  <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    {/* Header */}
+    <header style={{ padding: "16px", borderBottom: "1px solid #ccc", display: "flex", alignItems: "center" }}>
+    </header>
 
-    {/* Map Container */}
-    <div ref={mapContainerRef} style={{ width: "100%", height: "500px" }} />
+    {/* Main Content Layout */}
+    <main style={{ display: "flex", flex: 1, padding: "16px", gap: "16px", width: "100%"}}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Search and HOA Dropdown */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "16px", width: "100%" }}>
+        <Autocomplete
+          options={properties}
+          getOptionLabel={(option) => option?.address_line1 || ""}
+          filterOptions={(options, { inputValue }) =>
+            options.filter((option) => {
+              // Ensure option and address_line1 exist before calling .toLowerCase()
+              if (!option || !option.address_line1) return false;
+              return option.address_line1.toLowerCase().includes(String(inputValue).toLowerCase());
+            })
+          }
+          value={properties.find((p) => p.address_line1 === searchQuery) || null}
+          onChange={(event, newValue) => {
+            setSearchQuery(newValue ? newValue.address_line1 : "");
+            setSelectedProperty(newValue || null);
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              placeholder="Search Property"
+              fullWidth // ✅ Expands to fill available space
+            />
+          )}
+          style={{ flex: 1 }} // ✅ Ensures it grows inside the flex container
+        />
+         
+     <Select value={selectedHOA} onChange={(e) => setSelectedHOA(e.target.value)} displayEmpty>
+    <MenuItem value="">Select HOA</MenuItem>
+    {[...new Set(properties.map(p => p.subdivision))].map((hoa, index) => (
+      <MenuItem key={index} value={hoa}>{hoa || "Unknown HOA"}</MenuItem>
+    ))}
+   </Select>
+        </div>
 
-    {/* Side Panel for Selected Property */}
-    {selectedProperty && (
-      <div className="side-panel">
-        <h3>Property Details</h3>
-        <p><strong>Address:</strong> {selectedProperty.address_line1}</p>
-        <p><strong>City:</strong> {selectedProperty.city}, {selectedProperty.state}</p>
-        <p><strong>Zip Code:</strong> {selectedProperty.zip_code}</p>
+        {/* Map */}
+        <div ref={mapContainerRef} style={{ width: "100%", height: "500px", borderRadius: "8px", background: "#eee" }} />
       </div>
-    )}
+
+      {/* Side Panel */}
+      <div style={{ width: "350px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Property Details */}
+        <Card>
+          <CardHeader title="Property Details" />
+          <CardContent>
+            {selectedProperty ? (
+              <>
+                <Typography variant="subtitle2">Address</Typography>
+                <Typography>{selectedProperty.address_line1}</Typography>
+                <Typography>{selectedProperty.city}, {selectedProperty.state} {selectedProperty.zip_code}</Typography>
+
+                <Typography variant="subtitle2" sx={{ mt: 2 }}>HOA</Typography>
+                <Typography>{selectedProperty.subdivision || "N/A"}</Typography>
+              </>
+            ) : (
+              <Typography>No property selected</Typography>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Chat Box */}
+        <Card>
+          <CardHeader title="Navigator Agent" />
+          <CardContent>
+            <div style={{ height: "150px", background: "#f5f5f5", padding: "8px", borderRadius: "8px", overflowY: "auto" }}>
+              {/* Chat messages would go here */}
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+              <TextField
+                variant="outlined"
+                placeholder="Ask about HOA rules..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                fullWidth
+              />
+              <Button variant="contained" color="primary">Send</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   </div>
 );
-;
+
 };
 
 export default MapComponent;

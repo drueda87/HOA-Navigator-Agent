@@ -13,19 +13,20 @@ code {
 }
 
 .custom-marker {
-  width: 20px; /* Adjust size */
-  height: 20px;
+  width: 5px; /* Adjust size */
+  height: 5px;
   background-color: blue; /* Default color */
   border-radius: 50%;
-  border: 2px solid white;
+  border: 1px solid white;
   cursor: pointer;
 }
 .side-panel {
   position: absolute;
-  top: 10px;
+  top: 100px;
   right: 10px;
   background: white;
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
+
