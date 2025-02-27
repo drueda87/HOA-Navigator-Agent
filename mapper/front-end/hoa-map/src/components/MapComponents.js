@@ -163,59 +163,43 @@ useEffect(() => {
 }, [map, properties, selectedHOA]); // Runs when map, properties, or HOA changes
 
 const [chatInput, setChatInput] = useState("");
+
 return (
   <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-    {/* Header */}
-    <header style={{ padding: "16px", borderBottom: "1px solid #ccc", display: "flex", alignItems: "center" }}>
+    {/* Header Section */}
+    <header style={{ padding: "16px", borderBottom: "1px solid #ccc", display: "flex", alignItems: "center", gap: "10px" }}>
     </header>
 
-    {/* Main Content Layout */}
-    <main style={{ display: "flex", flex: 1, padding: "16px", gap: "16px", width: "100%"}}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Search and HOA Dropdown */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "16px", width: "100%" }}>
-        <Autocomplete
-          options={properties}
-          getOptionLabel={(option) => option?.address_line1 || ""}
-          filterOptions={(options, { inputValue }) =>
-            options.filter((option) => {
-              // Ensure option and address_line1 exist before calling .toLowerCase()
-              if (!option || !option.address_line1) return false;
-              return option.address_line1.toLowerCase().includes(String(inputValue).toLowerCase());
-            })
-          }
-          value={properties.find((p) => p.address_line1 === searchQuery) || null}
-          onChange={(event, newValue) => {
-            setSearchQuery(newValue ? newValue.address_line1 : "");
-            setSelectedProperty(newValue || null);
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              placeholder="Search Property"
-              fullWidth // ✅ Expands to fill available space
-            />
-          )}
-          style={{ flex: 1 }} // ✅ Ensures it grows inside the flex container
-        />
-         
-     <Select value={selectedHOA} onChange={(e) => setSelectedHOA(e.target.value)} displayEmpty>
-    <MenuItem value="">Select HOA</MenuItem>
-    {[...new Set(properties.map(p => p.subdivision))].map((hoa, index) => (
-      <MenuItem key={index} value={hoa}>{hoa || "Unknown HOA"}</MenuItem>
-    ))}
-   </Select>
+    {/* Main Content Section */}
+    <main style={{ display: "flex", gap: "16px", flex: 1, padding: "16px" }}>
+      {/* Left Section: Map and Filters */}
+      <div style={{ flex: 2, display: "flex", flexDirection: "column" }}>
+        {/* Search & HOA Dropdown */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+          <Autocomplete
+            options={properties}
+            getOptionLabel={(option) => option.address_line1 || ""}
+            renderInput={(params) => <TextField {...params} label="Search Property" variant="outlined" fullWidth />}
+            value={searchQuery}
+            onChange={(event, newValue) => setSearchQuery(newValue)}
+            style={{ flex: 1 }}
+          />
+          <Select value={selectedHOA} onChange={(e) => setSelectedHOA(e.target.value)} displayEmpty>
+            <MenuItem value="">Select HOA</MenuItem>
+            {[...new Set(properties.map(p => p.subdivision))].map((hoa, index) => (
+              <MenuItem key={index} value={hoa}>{hoa || "Unknown HOA"}</MenuItem>
+            ))}
+          </Select>
         </div>
 
-        {/* Map */}
-        <div ref={mapContainerRef} style={{ width: "100%", height: "500px", borderRadius: "8px", background: "#eee" }} />
+        {/* Map Section */}
+        <div ref={mapContainerRef} style={{ width: "100%", height: "550px", borderRadius: "8px", background: "#eee" }} />
       </div>
 
-      {/* Side Panel */}
-      <div style={{ width: "350px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Right Section: Property Details and Chat */}
+      <div style={{ flex: 1.2, display: "flex", flexDirection: "column", maxHeight: "600px", gap: "16px" }}>
         {/* Property Details */}
-        <Card>
+        <Card style={{ flex: 0.6 }}>
           <CardHeader title="Property Details" />
           <CardContent>
             {selectedProperty ? (
@@ -223,7 +207,6 @@ return (
                 <Typography variant="subtitle2">Address</Typography>
                 <Typography>{selectedProperty.address_line1}</Typography>
                 <Typography>{selectedProperty.city}, {selectedProperty.state} {selectedProperty.zip_code}</Typography>
-
                 <Typography variant="subtitle2" sx={{ mt: 2 }}>HOA</Typography>
                 <Typography>{selectedProperty.subdivision || "N/A"}</Typography>
               </>
@@ -233,17 +216,17 @@ return (
           </CardContent>
         </Card>
 
-        {/* Chat Box */}
-        <Card>
+        {/* Navigator Chat Agent */}
+        <Card style={{ flex: 1 }}>
           <CardHeader title="Navigator Agent" />
           <CardContent>
             <div style={{ height: "150px", background: "#f5f5f5", padding: "8px", borderRadius: "8px", overflowY: "auto" }}>
-              {/* Chat messages would go here */}
+              {/* Chat messages go here */}
             </div>
             <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
               <TextField
                 variant="outlined"
-                placeholder="Ask about HOA rules..."
+                placeholder="Ask about the HOA..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 fullWidth

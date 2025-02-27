@@ -20,16 +20,22 @@ code {
   border: 1px solid white;
   cursor: pointer;
 }
-.side-panel {
-  position: absolute;
-  top: 100px;
-  right: 10px;
-  background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+.main-container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 
+.map-container {
+  flex: 2; /* Makes the map take 2 parts of the available space */
+}
+
+.side-panel {
+  flex: 1; /* Makes the property details column take 1 part */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 .hoa-header {
   display: flex;
   align-items: center; /* Aligns items vertically */
