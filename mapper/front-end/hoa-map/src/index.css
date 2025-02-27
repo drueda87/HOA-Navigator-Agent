@@ -30,3 +30,20 @@ code {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
+.hoa-header {
+  display: flex;
+  align-items: center; /* Aligns items vertically */
+  gap: 10px; /* Adds spacing between icon & text */
+  justify-content: left; /* Centers both horizontally */
+  padding: 10px;
+}
+
+.hoa-icon {
+  width: 40px;  /* Adjust to match text height */
+  height: auto; /* Maintain aspect ratio */
+}
+
+.hoa-title {
+  font-size: 24px; /* Adjust for consistency */
+  font-weight: bold;
+}
